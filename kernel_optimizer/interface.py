@@ -22,15 +22,15 @@ Examples
 chat = [
     {
         "role": "system",
-        "content": "Act as a CUDA kernel optimizer. Given a CUDA kernel, write an algorithm in Python to optimize the kernel. The algorithm should resemble the examples provided."
+        "content": "Act as a kernel_tuner optimization strategy expert for enhancing parameter search efficiency. Given a CUDA kernel, write an algorithm in python using kernel tuner along with the exampels provided to perform an efficient parameter search over the searchable parameters specified. The algorithm should resemble the examples provided."
     }
 ]
 
 # TODO: Implement RAG for context and example generation and ingestion (tokenization for quicker inference) maybe LangChain integration?
-def inference(query, context=None, examples=None):
+def inference(kernel_definition, context=None, examples=None):
     msg = {
         "role": "user",
-        "content": f"Below is the CUDA kernel that needs optimization:\n{query}\n*** If available, use the provided performance metrics, and example optimization strategies below as a reference for creating the optimization strategy. ***\n\nPerformance Context:\n{context}\n\nExamples:\n{examples}"
+        "content": f"Given the following CUDA kernel:\n{kernel_definition}\n*** If provided, use the performance metrics, and example optimization strategies below as a reference for creating a new novel optimization strategy. ***\n\nPerformance Context:\n{context}\n\nExamples:\n{examples}"
     }
 
     chat.append(msg)
@@ -83,12 +83,12 @@ def main():
         raise Exception("Kernel not found in CUDA code")
 
     # Print the CUDA file path and the CUDA kernel
-    print(f"CUDA file path: {cuda_file_path}")
-    print(f"CUDA kernel:\n{cuda_kernel}")
+    print(f"CUDA file path: {cuda_file_path}\n\n")
+    print(f"CUDA kernel:\n{cuda_kernel}\n\n")
 
     # Load examples from examples directory and append into a string
     examples = ""
-    examples_dir = "../examples"
+    examples_dir = "examples/"
     for filename in os.listdir(examples_dir):
         with open(os.path.join(examples_dir, filename), 'r') as file:
             examples += f"\n******** EXAMPLE {filename} ********\n\n" + file.read() + "\n"
