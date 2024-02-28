@@ -1,2 +1,4 @@
 [submodule "kernel_tuner"]
-    path='kernel_tuner"
+    path=kernel_tuner
+    url=https://github.com/WAT-ai/kernel_tuner.git
+    ignore=all
