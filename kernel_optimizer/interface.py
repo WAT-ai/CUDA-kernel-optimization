@@ -2,6 +2,9 @@ import argparse
 import openai
 import os
 
+# timing
+from datetime import datetime
+
 from dotenv import load_dotenv
 
 MODEL_NAME = "gpt-4-turbo-preview"
@@ -61,6 +64,15 @@ def inference(kernel_definition, context=None, examples=None):
 
     return reply["content"]
 
+def extract_python_code(response_content):
+    code_start = response_content.find("```python")
+    code_end = response_content.find("```", code_start + 1)
+
+    if code_start != -1 and code_end != -1:
+        return response_content[code_start + len("```python"):code_end].strip()
+    else:
+        return None
+
 def main():
     parser = argparse.ArgumentParser(description='CLI for OpenAI GPT-4 Turbo')
     parser.add_argument('--cuda-file', type=str, help='Path to the CUDA file')
@@ -93,8 +105,24 @@ def main():
         with open(os.path.join(examples_dir, filename), 'r') as file:
             examples += f"\n******** EXAMPLE {filename} ********\n\n" + file.read() + "\n"
 
-    # Run the inference
-    inference(cuda_kernel, examples=examples)
+    # build optimization strategy
+    optim_strat = inference(cuda_kernel, examples=examples)
+    optim_strat_python_code = extract_python_code(optim_strat)
+
+    if optim_strat_python_code:
+        output_dir = "kernel_optimizer/strategies/"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        file_name = f"optimization_strategy_{timestamp}.py"
+
+        with open(os.path.join(output_dir, file_name), 'w') as file:
+            file.write(optim_strat_python_code)
+        
+        print(f"saved at: {os.path.join(output_dir, file_name)}")
+    else:
+        print("No Python code block was found in the response.")
 
 if __name__ == '__main__':
     main()
