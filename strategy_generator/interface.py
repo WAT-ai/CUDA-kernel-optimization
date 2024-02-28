@@ -33,7 +33,7 @@ chat = [
 def inference(kernel_definition, context=None, examples=None):
     msg = {
         "role": "user",
-        "content": f"Given the following CUDA kernel:\n{kernel_definition}\n*** If provided, use the performance metrics, and example optimization strategies below as a reference for creating a new novel optimization strategy. ***\n\nPerformance Context:\n{context}\n\nExamples:\n{examples}"
+        "content": f"Given the following CUDA kernel:\n{kernel_definition}\n*** If provided, use the performance metrics, and example optimization strategies below as a reference for creating a new novel optimization strategy. The function name for the strategy should be 'generated_optimization_strategy'. ***\n\nPerformance Context:\n{context}\n\nExamples:\n{examples}"
     }
 
     chat.append(msg)
@@ -100,7 +100,7 @@ def main():
 
     # Load examples from examples directory and append into a string
     examples = ""
-    examples_dir = "examples/"
+    examples_dir = "optimization_strategy_examples/"
     for filename in os.listdir(examples_dir):
         with open(os.path.join(examples_dir, filename), 'r') as file:
             examples += f"\n******** EXAMPLE {filename} ********\n\n" + file.read() + "\n"
@@ -110,12 +110,11 @@ def main():
     optim_strat_python_code = extract_python_code(optim_strat)
 
     if optim_strat_python_code:
-        output_dir = "kernel_optimizer/strategies/"
+        output_dir = "strategy_generator/strategies/"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        file_name = f"optimization_strategy_{timestamp}.py"
+        file_name = "generated_optimization_strategy.py"
 
         with open(os.path.join(output_dir, file_name), 'w') as file:
             file.write(optim_strat_python_code)
