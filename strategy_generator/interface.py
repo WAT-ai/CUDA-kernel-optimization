@@ -7,7 +7,16 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
+import feedback_loop
+
 MODEL_NAME = "gpt-4-turbo-preview"
+
+tol = 1e-3
+curr_perf_metric = 1000
+prev_perf_metric = 0
+
+iteration = 0
+max_iterations = 10
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -72,6 +81,9 @@ def extract_python_code(response_content):
         return response_content[code_start + len("```python"):code_end].strip()
     else:
         return None
+    
+def diff(curr_perf_metric, prev_perf_metric):
+    return abs(curr_perf_metric - prev_perf_metric)
 
 def main():
     parser = argparse.ArgumentParser(description='CLI for OpenAI GPT-4 Turbo')
@@ -105,23 +117,39 @@ def main():
         with open(os.path.join(examples_dir, filename), 'r') as file:
             examples += f"\n******** EXAMPLE {filename} ********\n\n" + file.read() + "\n"
 
-    # build optimization strategy
-    optim_strat = inference(cuda_kernel, examples=examples)
-    optim_strat_python_code = extract_python_code(optim_strat)
+    while (diff(curr_perf_metric, prev_perf_metric) > tol) or (iteration < max_iterations):
+        # build optimization strategy
+        optim_strat = inference(cuda_kernel, examples=examples)
+        optim_strat_python_code = extract_python_code(optim_strat)
 
-    if optim_strat_python_code:
-        output_dir = "strategy_generator/strategies/"
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if optim_strat_python_code:
+            output_dir = "strategy_generator/strategies/"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-        file_name = "generated_optimization_strategy.py"
+            file_name = "generated_optimization_strategy.py"
 
-        with open(os.path.join(output_dir, file_name), 'w') as file:
-            file.write(optim_strat_python_code)
-        
-        print(f"saved at: {os.path.join(output_dir, file_name)}")
-    else:
-        print("No Python code block was found in the response.")
+            with open(os.path.join(output_dir, file_name), 'w') as file:
+                file.write(optim_strat_python_code)
+            
+            print(f"saved at: {os.path.join(output_dir, file_name)}")
+        else:
+            print("No Python code block was found in the response.")
+
+        # Run the feedback loop
+        feedback_loop.pipeline()
+
+        # Read error buffer
+        error_output = feedback_loop.error_buf.getvalue()
+
+        if error_output:
+            print(f"Error: {error_output}")
+
+        # # Get the performance metric
+        # prev_perf_metric = curr_perf_metric
+        # curr_perf_metric = feedback_loop.get_performance_metric()
+
+
 
 if __name__ == '__main__':
     main()
